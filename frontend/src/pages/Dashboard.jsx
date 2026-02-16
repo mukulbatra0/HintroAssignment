@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchBoards, createBoard, deleteBoard } from '../store/boardSlice';
+import { addToast } from '../store/toastSlice';
 import Header from '../components/Header';
+import { BoardSkeleton } from '../components/LoadingSkeleton';
 import { Trash2, Users, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 

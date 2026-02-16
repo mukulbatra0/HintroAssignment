@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import boardReducer from './boardSlice';
 import listReducer from './listSlice';
 import taskReducer from './taskSlice';
+import toastReducer from './toastSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     boards: boardReducer,
     lists: listReducer,
     tasks: taskReducer,
+    toast: toastReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

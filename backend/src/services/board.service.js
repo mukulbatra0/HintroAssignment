@@ -34,6 +34,14 @@ class BoardService {
       throw ApiError.notFound('Board not found');
     }
 
+    // Debug logging
+    console.log('=== Board Access Debug ===');
+    console.log('User ID:', userId.toString());
+    console.log('Board Owner ID:', board.owner._id.toString());
+    console.log('Board Members:', board.members.map(m => m._id.toString()));
+    console.log('Has Access Result:', board.hasAccess(userId));
+    console.log('========================');
+
     // Check if user has access
     if (!board.hasAccess(userId)) {
       throw ApiError.forbidden('You do not have access to this board');

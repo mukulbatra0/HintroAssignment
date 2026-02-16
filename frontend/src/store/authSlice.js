@@ -5,7 +5,7 @@ import socketClient from '../services/socket';
 // Async thunks
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData, { rejectWith Value }) => {
+  async (userData, { rejectWithValue }) => {
     try {
       const response = await authAPI.register(userData);
       return response.data;

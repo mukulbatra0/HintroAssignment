@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getMe } from './store/authSlice';
 import { useSocketConnection } from './hooks/useSocket';
 import ProtectedRoute from './components/ProtectedRoute';
+import Toast from './components/Toast';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -25,6 +26,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toast />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

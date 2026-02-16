@@ -73,15 +73,27 @@ boardSchema.pre('save', function (next) {
 // Method to check if user has access to board
 boardSchema.methods.hasAccess = function (userId) {
   const userIdStr = userId.toString();
-  return (
-    this.owner.toString() === userIdStr ||
-    this.members.some((memberId) => memberId.toString() === userIdStr)
-  );
+  
+  // Handle both populated and unpopulated owner field
+  const ownerId = this.owner._id ? this.owner._id.toString() : this.owner.toString();
+  
+  // Check if user is owner
+  if (ownerId === userIdStr) {
+    return true;
+  }
+  
+  // Check if user is in members array
+  return this.members.some((memberId) => {
+    // Handle both populated and unpopulated members
+    const memberIdStr = memberId._id ? memberId._id.toString() : memberId.toString();
+    return memberIdStr === userIdStr;
+  });
 };
 
 // Method to check if user is owner
 boardSchema.methods.isOwner = function (userId) {
-  return this.owner.toString() === userId.toString();
+  const ownerId = this.owner._id ? this.owner._id.toString() : this.owner.toString();
+  return ownerId === userId.toString();
 };
 
 const Board = mongoose.model('Board', boardSchema);
