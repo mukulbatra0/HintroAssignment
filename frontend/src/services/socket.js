@@ -133,9 +133,9 @@ class SocketClient {
     this.socket.emit('task:updated', { task, boardId });
   }
 
-  emitTaskDeleted(taskId, boardId) {
+  emitTaskDeleted(taskId, listId, boardId) {
     if (!this.socket) return;
-    this.socket.emit('task:deleted', { taskId, boardId });
+    this.socket.emit('task:deleted', { taskId, listId, boardId });
   }
 
   emitTaskMoved(task, oldListId, newListId, boardId) {

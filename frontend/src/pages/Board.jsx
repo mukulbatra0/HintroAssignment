@@ -7,6 +7,7 @@ import { createTask, updateTask, deleteTask, moveTask, setTasksForList } from '.
 import { useSocketListeners } from '../hooks/useSocket';
 import socketClient from '../services/socket';
 import Header from '../components/Header';
+import BoardMembers from '../components/BoardMembers';
 import TaskCard from '../components/TaskCard';
 import { Plus, X, MoreVertical } from 'lucide-react';
 import { 
@@ -192,10 +193,15 @@ const Board = () => {
 
       <div className="p-4">
         <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
-          <h1 className="text-2xl font-bold text-gray-900">{currentBoard.title}</h1>
-          {currentBoard.description && (
-            <p className="text-gray-600 mt-1">{currentBoard.description}</p>
-          )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">{currentBoard.title}</h1>
+              {currentBoard.description && (
+                <p className="text-gray-600 mt-1">{currentBoard.description}</p>
+              )}
+            </div>
+            <BoardMembers board={currentBoard} />
+          </div>
         </div>
 
         <DndContext

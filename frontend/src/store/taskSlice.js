@@ -120,7 +120,7 @@ const taskSlice = createSlice({
     },
     setTasksForList: (state, action) => {
       const { listId, tasks } = action.payload;
-      state.tasks[listId] = tasks.sort((a, b) => a.position - b.position);
+      state.tasks[listId] = [...tasks].sort((a, b) => a.position - b.position);
     },
     // Real-time updates
     taskCreatedRealtime: (state, action) => {
@@ -128,8 +128,12 @@ const taskSlice = createSlice({
       if (!state.tasks[task.list]) {
         state.tasks[task.list] = [];
       }
-      state.tasks[task.list].push(task);
-      state.tasks[task.list].sort((a, b) => a.position - b.position);
+      // Check if task already exists to prevent duplicates
+      const exists = state.tasks[task.list].some((t) => t._id === task._id);
+      if (!exists) {
+        state.tasks[task.list].push(task);
+        state.tasks[task.list].sort((a, b) => a.position - b.position);
+      }
     },
     taskUpdatedRealtime: (state, action) => {
       const task = action.payload;

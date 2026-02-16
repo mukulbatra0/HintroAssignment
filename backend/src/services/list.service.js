@@ -164,9 +164,6 @@ class ListService {
     return list;
   }
 
-  /**
-   * Get all lists for a board
-   */
   async getBoardLists(boardId, userId) {
     // Check if board exists and user has access
     const board = await Board.findById(boardId);
@@ -179,7 +176,13 @@ class ListService {
       throw ApiError.forbidden('You do not have access to this board');
     }
 
-    const lists = await List.find({ board: boardId }).sort({ position: 1 });
+    const lists = await List.find({ board: boardId })
+      .sort({ position: 1 })
+      .populate({
+        path: 'tasks',
+        options: { sort: { position: 1 } },
+        populate: { path: 'assignedTo', select: 'name email avatar' },
+      });
 
     return lists;
   }
