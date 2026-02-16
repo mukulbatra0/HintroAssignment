@@ -1,31 +1,58 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getMe } from './store/authSlice';
+import { useSocketConnection } from './hooks/useSocket';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Board from './pages/Board';
 
 function App() {
+  const dispatch = useDispatch();
+  const { token, isAuthenticated } = useSelector((state) => state.auth);
+
+  // Manage socket connection
+  useSocketConnection(token, isAuthenticated);
+
+  useEffect(() => {
+    // Auto-login if token exists
+    if (token && !isAuthenticated) {
+      dispatch(getMe());
+    }
+  }, [token, isAuthenticated, dispatch]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
-        <Route path="/" element={
-          <div className="flex items-center justify-center h-screen">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-800 mb-4">
-                TaskCollab
-              </h1>
-              <p className="text-gray-600 mb-8">
-                Real-Time Task Collaboration Platform
-              </p>
-              <div className="space-y-2 text-sm text-gray-500">
-                <p>✅ Backend structure created</p>
-                <p>✅ Frontend structure created</p>
-                <p className="font-semibold text-primary-600">
-                  Ready for Phase 2: Database Models
-                </p>
-              </div>
-            </div>
-          </div>
-        } />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/boards/:boardId"
+          element={
+            <ProtectedRoute>
+              <Board />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </div>
   );
 }
 
 export default App;
+

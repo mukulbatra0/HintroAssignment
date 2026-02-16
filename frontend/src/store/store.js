@@ -1,18 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
-
-// Slices will be imported here as they are created
-// import authReducer from './slices/authSlice';
-// import boardsReducer from './slices/boardsSlice';
-// etc.
+import authReducer from './authSlice';
+import boardReducer from './boardSlice';
+import listReducer from './listSlice';
+import taskReducer from './taskSlice';
 
 export const store = configureStore({
   reducer: {
-    // auth: authReducer,
-    // boards: boardsReducer,
-    // lists: listsReducer,
-    // tasks: tasksReducer,
-    // activities: activitiesReducer,
-    // ui: uiReducer,
+    auth: authReducer,
+    boards: boardReducer,
+    lists: listReducer,
+    tasks: taskReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
