@@ -42,9 +42,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes will be mounted here
-// import routes from './routes/index.js';
-// app.use('/api', routes);
+// API routes
+import routes from './routes/index.js';
+app.use('/api', routes);
+
 
 // 404 handler for undefined routes
 app.use(notFoundHandler);
