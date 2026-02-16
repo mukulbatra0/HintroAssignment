@@ -13,8 +13,8 @@ const listSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Board',
       required: [true, 'List must belong to a board'],
-      index: true,
     },
+
     position: {
       type: Number,
       required: true,

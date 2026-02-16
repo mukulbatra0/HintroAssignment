@@ -17,24 +17,46 @@ export const ACTIVITY_TYPES = {
 };
 
 export const SOCKET_EVENTS = {
-  // Client to Server
-  JOIN_BOARD: 'join:board',
-  LEAVE_BOARD: 'leave:board',
+  // Connection
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
+  ERROR: 'error',
   
-  // Server to Client
+  // Board events
+  BOARD_JOIN: 'board:join',
+  BOARD_LEAVE: 'board:leave',
+  BOARD_CREATED: 'board:created',
+  BOARD_UPDATED: 'board:updated',
+  BOARD_DELETED: 'board:deleted',
+  
+  // Member events
+  MEMBER_ADDED: 'member:added',
+  MEMBER_REMOVED: 'member:removed',
+  USER_JOINED: 'user:joined',
+  USER_LEFT: 'user:left',
+  
+  // List events
+  LIST_CREATED: 'list:created',
+  LIST_UPDATED: 'list:updated',
+  LIST_DELETED: 'list:deleted',
+  LIST_REORDERED: 'list:reordered',
+  
+  // Task events
   TASK_CREATED: 'task:created',
   TASK_UPDATED: 'task:updated',
   TASK_DELETED: 'task:deleted',
   TASK_MOVED: 'task:moved',
+  TASK_ASSIGNED: 'task:assigned',
+  TASK_UNASSIGNED: 'task:unassigned',
   
-  LIST_CREATED: 'list:created',
-  LIST_UPDATED: 'list:updated',
-  LIST_DELETED: 'list:deleted',
+  // Typing indicators (optional)
+  TYPING_START: 'typing:start',
+  TYPING_STOP: 'typing:stop',
   
+  // Activity
   ACTIVITY_NEW: 'activity:new',
-  
-  ERROR: 'error',
 };
+
 
 export const HTTP_STATUS = {
   OK: 200,

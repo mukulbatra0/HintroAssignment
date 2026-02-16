@@ -22,14 +22,10 @@ const io = new Server(httpServer, {
 // Make io accessible to routes
 app.set('io', io);
 
-// Socket.io connection handler (will be implemented later)
-io.on('connection', (socket) => {
-  logger.info(`Socket connected: ${socket.id}`);
+// Initialize socket handlers
+import { initializeSocket } from './src/socket/index.js';
+initializeSocket(io);
 
-  socket.on('disconnect', () => {
-    logger.info(`Socket disconnected: ${socket.id}`);
-  });
-});
 
 // Server configuration
 const PORT = process.env.PORT || 5000;
