@@ -100,12 +100,34 @@ const listSlice = createSlice({
       state.lists = state.lists.filter((l) => l._id !== action.payload);
     },
     listReorderedRealtime: (state, action) => {
+      console.log('📋 listReorderedRealtime called:', action.payload);
       const { listId, newPosition } = action.payload;
       const index = state.lists.findIndex((l) => l._id === listId);
+      console.log('Found list at index:', index, 'Current lists:', state.lists.map(l => ({ id: l._id, title: l.title, position: l.position })));
       if (index !== -1) {
-        state.lists[index].position = newPosition;
-        // Resort
-        state.lists.sort((a, b) => a.position - b.position);
+        // Create a new array to ensure React detects the change
+        state.lists = state.lists.map((list) =>
+          list._id === listId ? { ...list, position: newPosition } : list
+        ).sort((a, b) => a.position - b.position);
+        console.log('After reorder:', state.lists.map(l => ({ id: l._id, title: l.title, position: l.position })));
+      }
+    },
+    // Optimistic list reorder - immediately update UI
+    reorderListsOptimistically: (state, action) => {
+      const { activeListId, overListId } = action.payload;
+      const oldIndex = state.lists.findIndex(l => l._id === activeListId);
+      const newIndex = state.lists.findIndex(l => l._id === overListId);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Remove the item from old position
+        const [movedList] = state.lists.splice(oldIndex, 1);
+        // Insert at new position
+        state.lists.splice(newIndex, 0, movedList);
+        
+        // Update positions for all lists
+        state.lists.forEach((list, index) => {
+          list.position = index;
+        });
       }
     },
   },
@@ -202,6 +224,7 @@ export const {
   listUpdatedRealtime,
   listDeletedRealtime,
   listReorderedRealtime,
+  reorderListsOptimistically,
 } = listSlice.actions;
 
 export default listSlice.reducer;

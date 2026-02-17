@@ -125,25 +125,30 @@ const taskSlice = createSlice({
     // Real-time updates
     taskCreatedRealtime: (state, action) => {
       const task = action.payload;
-      if (!state.tasks[task.list]) {
-        state.tasks[task.list] = [];
-      }
       // Check if task already exists to prevent duplicates
-      const exists = state.tasks[task.list].some((t) => t._id === task._id);
+      const existingTasks = state.tasks[task.list] || [];
+      const exists = existingTasks.some((t) => t._id === task._id);
+      
       if (!exists) {
-        state.tasks[task.list].push(task);
-        state.tasks[task.list].sort((a, b) => a.position - b.position);
+        state.tasks = {
+          ...state.tasks,
+          [task.list]: [...existingTasks, task].sort((a, b) => a.position - b.position)
+        };
       }
     },
     taskUpdatedRealtime: (state, action) => {
       const task = action.payload;
-      const listId = task.list;
+      // Handle both cases: task.list as object or as string ID
+      const listId = typeof task.list === 'object' ? task.list._id : task.list;
       
       if (state.tasks[listId]) {
-        // Create a new array with the updated task
-        state.tasks[listId] = state.tasks[listId].map((t) =>
-          t._id === task._id ? task : t
-        );
+        // Create a new tasks object and new array to ensure React detects the change
+        state.tasks = {
+          ...state.tasks,
+          [listId]: state.tasks[listId].map((t) =>
+            t._id === task._id ? task : t
+          )
+        };
       }
       
       if (state.currentTask?._id === task._id) {
@@ -200,11 +205,11 @@ const taskSlice = createSlice({
       .addCase(createTask.fulfilled, (state, action) => {
         state.loading = false;
         const task = action.payload;
-        if (!state.tasks[task.list]) {
-          state.tasks[task.list] = [];
-        }
-        state.tasks[task.list].push(task);
-        state.tasks[task.list].sort((a, b) => a.position - b.position);
+        const existingTasks = state.tasks[task.list] || [];
+        state.tasks = {
+          ...state.tasks,
+          [task.list]: [...existingTasks, task].sort((a, b) => a.position - b.position)
+        };
       })
       .addCase(createTask.rejected, (state, action) => {
         state.loading = false;
@@ -218,20 +223,33 @@ const taskSlice = createSlice({
         state.error = null;
       })
       .addCase(updateTask.fulfilled, (state, action) => {
+        console.log('===== updateTask.fulfilled =====');
+        console.log('Payload:', action.payload);
         state.loading = false;
         const task = action.payload;
-        const listId = task.list;
+        // Handle both cases: task.list as object or as string ID
+        const listId = typeof task.list === 'object' ? task.list._id : task.list;
+        
+        console.log('List ID:', listId);
+        console.log('Tasks before update:', JSON.stringify(state.tasks[listId]));
         
         if (state.tasks[listId]) {
-          // Create a new array with the updated task to ensure React detects the change
-          state.tasks[listId] = state.tasks[listId].map((t) =>
-            t._id === task._id ? task : t
-          );
+          // Create a new tasks object and new array to ensure React detects the change
+          state.tasks = {
+            ...state.tasks,
+            [listId]: state.tasks[listId].map((t) =>
+              t._id === task._id ? task : t
+            )
+          };
+          console.log('Tasks after update:', JSON.stringify(state.tasks[listId]));
+        } else {
+          console.log('WARNING: List not found in state.tasks');
         }
         
         if (state.currentTask?._id === task._id) {
           state.currentTask = task;
         }
+        console.log('===== END updateTask.fulfilled =====');
       })
       .addCase(updateTask.rejected, (state, action) => {
         state.loading = false;
@@ -270,17 +288,17 @@ const taskSlice = createSlice({
         state.loading = false;
         const task = action.payload;
         
-        // Remove from all lists first
+        // Create new tasks object with task removed from all lists and added to new list
+        const newTasks = {};
         Object.keys(state.tasks).forEach((listId) => {
-          state.tasks[listId] = state.tasks[listId].filter((t) => t._id !== task._id);
+          newTasks[listId] = state.tasks[listId].filter((t) => t._id !== task._id);
         });
         
         // Add to new list
-        if (!state.tasks[task.list]) {
-          state.tasks[task.list] = [];
-        }
-        state.tasks[task.list].push(task);
-        state.tasks[task.list].sort((a, b) => a.position - b.position);
+        const targetListTasks = newTasks[task.list] || [];
+        newTasks[task.list] = [...targetListTasks, task].sort((a, b) => a.position - b.position);
+        
+        state.tasks = newTasks;
       })
       .addCase(moveTask.rejected, (state, action) => {
         state.loading = false;
