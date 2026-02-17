@@ -137,13 +137,15 @@ const taskSlice = createSlice({
     },
     taskUpdatedRealtime: (state, action) => {
       const task = action.payload;
-      const listTasks = state.tasks[task.list];
-      if (listTasks) {
-        const index = listTasks.findIndex((t) => t._id === task._id);
-        if (index !== -1) {
-          listTasks[index] = task;
-        }
+      const listId = task.list;
+      
+      if (state.tasks[listId]) {
+        // Create a new array with the updated task
+        state.tasks[listId] = state.tasks[listId].map((t) =>
+          t._id === task._id ? task : t
+        );
       }
+      
       if (state.currentTask?._id === task._id) {
         state.currentTask = task;
       }
@@ -218,13 +220,15 @@ const taskSlice = createSlice({
       .addCase(updateTask.fulfilled, (state, action) => {
         state.loading = false;
         const task = action.payload;
-        const listTasks = state.tasks[task.list];
-        if (listTasks) {
-          const index = listTasks.findIndex((t) => t._id === task._id);
-          if (index !== -1) {
-            listTasks[index] = task;
-          }
+        const listId = task.list;
+        
+        if (state.tasks[listId]) {
+          // Create a new array with the updated task to ensure React detects the change
+          state.tasks[listId] = state.tasks[listId].map((t) =>
+            t._id === task._id ? task : t
+          );
         }
+        
         if (state.currentTask?._id === task._id) {
           state.currentTask = task;
         }

@@ -9,7 +9,7 @@ import socketClient from '../services/socket';
 import Header from '../components/Header';
 import BoardMembers from '../components/BoardMembers';
 import TaskCard from '../components/TaskCard';
-import { Plus, X, MoreVertical } from 'lucide-react';
+import { Plus, X, MoreVertical, Trash2 } from 'lucide-react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -99,8 +99,11 @@ const Board = () => {
 
   const handleDragStart = (event) => {
     const { active } = event;
+    const taskId = active.id;
+    
+    // Find the task being dragged
     for (const listId in tasks) {
-      const task = tasks[listId]?.find((t) => t._id === active.id);
+      const task = tasks[listId]?.find(t => t._id === taskId);
       if (task) {
         setActiveTask(task);
         break;
@@ -110,226 +113,261 @@ const Board = () => {
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-    
-    if (!over) {
-      setActiveTask(null);
-      return;
-    }
-
-    const activeTaskId = active.id;
-    let oldListId = null;
-    let activeTaskObj = null;
-
-    for (const listId in tasks) {
-      const task = tasks[listId]?.find((t) => t._id === activeTaskId);
-      if (task) {
-        oldListId = listId;
-        activeTaskObj = task;
-        break;
-      }
-    }
-
-    if (!oldListId || !activeTaskObj) {
-      setActiveTask(null);
-      return;
-    }
-
-    let newListId = oldListId;
-    
-    for (const listId in tasks) {
-      const task = tasks[listId]?.find((t) => t._id === over.id);
-      if (task) {
-        newListId = listId;
-        break;
-      }
-    }
-
-    const droppedList = lists.find((l) => over.id.includes(l._id));
-    if (droppedList) {
-      newListId = droppedList._id;
-    }
-
-    const oldTasks = tasks[oldListId] || [];
-    const newTasks = tasks[newListId] || [];
-    
-    const oldIndex = oldTasks.findIndex((t) => t._id === activeTaskId);
-    let newIndex = 0;
-
-    if (newListId === oldListId) {
-      const overIndex = oldTasks.findIndex((t) => t._id === over.id);
-      newIndex = overIndex !== -1 ? overIndex : oldTasks.length - 1;
-    } else {
-      const overIndex = newTasks.findIndex((t) => t._id === over.id);
-      newIndex = overIndex !== -1 ? overIndex : newTasks.length;
-    }
-
-    const result = await dispatch(moveTask({
-      taskId: activeTaskId,
-      newListId,
-      newPosition: newIndex,
-    }));
-
-    if (!result.error) {
-      socketClient.emitTaskMoved(result.payload, oldListId, newListId, boardId);
-    }
-
     setActiveTask(null);
+
+    if (!over) return;
+
+    const taskId = active.id;
+    const overId = over.id;
+
+    // Determine source list
+    let sourceListId = null;
+    for (const listId in tasks) {
+      if (tasks[listId]?.some(t => t._id === taskId)) {
+        sourceListId = listId;
+        break;
+      }
+    }
+
+    if (!sourceListId) return;
+
+    // Check if dropped on a list container
+    if (overId.toString().startsWith('list-')) {
+      const targetListId = overId.replace('list-', '');
+      
+      if (sourceListId !== targetListId) {
+        const task = tasks[sourceListId]?.find(t => t._id === taskId);
+        if (task) {
+          await dispatch(moveTask({
+            taskId,
+            sourceListId,
+            targetListId,
+            position: (tasks[targetListId]?.length || 0),
+          }));
+          
+          socketClient.emitTaskMoved(
+            { ...task, list: targetListId },
+            sourceListId,
+            targetListId,
+            boardId
+          );
+        }
+      }
+    } else {
+      // Dropped on another task
+      let targetListId = null;
+      let targetPosition = 0;
+
+      for (const listId in tasks) {
+        const taskList = tasks[listId] || [];
+        const index = taskList.findIndex(t => t._id === overId);
+        if (index !== -1) {
+          targetListId = listId;
+          targetPosition = index;
+          break;
+        }
+      }
+
+      if (targetListId) {
+        const task = tasks[sourceListId]?.find(t => t._id === taskId);
+        if (task) {
+          await dispatch(moveTask({
+            taskId,
+            sourceListId,
+            targetListId,
+            position: targetPosition,
+          }));
+          
+          socketClient.emitTaskMoved(
+            { ...task, list: targetListId },
+            sourceListId,
+            targetListId,
+            boardId
+          );
+        }
+      }
+    }
   };
 
   if (!currentBoard) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-teal-50 to-cyan-100">
         <Header />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-teal-50 to-cyan-100 animate-fade-in">
       <Header showSearch={true} boardId={boardId} />
 
-      <div className="p-4">
-        <div className="mb-6 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-4">
+      <div className="p-6">
+        {/* Board Header - Glassmorphism */}
+        <div className="mb-6 bg-white/40 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50 p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">{currentBoard.title}</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                {currentBoard.title}
+              </h1>
               {currentBoard.description && (
-                <p className="text-gray-600 mt-1">{currentBoard.description}</p>
+                <p className="text-gray-600 mt-2 text-lg">{currentBoard.description}</p>
               )}
             </div>
             <BoardMembers board={currentBoard} />
           </div>
         </div>
 
+        {/* Lists Container */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex space-x-4 overflow-x-auto pb-4">
-            {lists.map((list) => (
-              <div
-                key={list._id}
-                id={`list-${list._id}`}
-                className="flex-shrink-0 w-80 bg-white rounded-lg shadow-md"
-              >
-                <div className="p-3 border-b border-gray-200">
-                  {editingListId === list._id ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        handleUpdateList(list._id);
-                      }}
-                      className="flex items-center"
-                    >
-                      <input
-                        type="text"
-                        value={editListTitle}
-                        onChange={(e) => setEditListTitle(e.target.value)}
-                        className="flex-1 px-2 py-1 border border-blue-500 rounded focus:outline-none"
-                        autoFocus
-                        onBlur={() => {
-                          if (editListTitle.trim()) {
+          <div className="flex space-x-5 overflow-x-auto pb-6 px-1">
+            {lists.map((list) => {
+              // Get tasks for this list - use tasks from Redux state
+              const listTasks = tasks[list._id] || [];
+              const taskIds = listTasks.map(task => task._id);
+              
+              console.log('Rendering list:', list.title, 'with tasks:', listTasks.length, listTasks);
+
+              return (
+                <div
+                  key={list._id}
+                  id={`list-${list._id}`}
+                  className="flex-shrink-0 w-80"
+                >
+                  {/* List Card - Glassmorphism */}
+                  <div className="bg-white/60 backdrop-blur-md rounded-3xl shadow-lg border border-white/70 overflow-hidden">
+                    {/* List Header */}
+                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-teal-500/10 border-b border-white/50">
+                      {editingListId === list._id ? (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
                             handleUpdateList(list._id);
-                          } else {
-                            setEditingListId(null);
-                          }
-                        }}
-                      />
-                    </form>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <h2
-                        className="font-semibold text-gray-900 flex-1 cursor-pointer"
-                        onClick={() => {
-                          setEditingListId(list._id);
-                          setEditListTitle(list.title);
-                        }}
-                      >
-                        {list.title} ({tasks[list._id]?.length || 0})
-                      </h2>
-                      <div className="relative group">
-                        <button className="p-1 hover:bg-gray-100 rounded">
-                          <MoreVertical className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 hidden group-hover:block z-10">
+                          }}
+                          className="flex items-center"
+                        >
+                          <input
+                            type="text"
+                            value={editListTitle}
+                            onChange={(e) => setEditListTitle(e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white/80 backdrop-blur-sm border-2 border-blue-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                            autoFocus
+                            onBlur={() => {
+                              if (editListTitle.trim()) {
+                                handleUpdateList(list._id);
+                              } else {
+                                setEditingListId(null);
+                              }
+                            }}
+                          />
+                        </form>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <h2
+                            className="font-bold text-gray-800 flex-1 cursor-pointer text-lg"
+                            onClick={() => {
+                              setEditingListId(list._id);
+                              setEditListTitle(list.title);
+                            }}
+                          >
+                            {list.title}
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                              ({listTasks.length})
+                            </span>
+                          </h2>
                           <button
                             onClick={() => handleDeleteList(list._id)}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                            title="Delete list"
                           >
-                            Delete List
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Tasks Area */}
+                    <div className="p-3 min-h-[100px] max-h-[calc(100vh-350px)] overflow-y-auto">
+                      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-3">
+                          {listTasks.map((task) => (
+                            <TaskCard
+                              key={`${task._id}-${task.isCompleted}-${task.title}`}
+                              task={task}
+                              listId={list._id}
+                              boardId={boardId}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+
+                      {/* Add Task Button */}
+                      <AddTaskButton listId={list._id} boardId={boardId} />
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
 
-                <SortableContext
-                  items={tasks[list._id]?.map((t) => t._id) || []}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="p-3 space-y-2 min-h-[100px] max-h-[calc(100vh-300px)] overflow-y-auto">
-                    {tasks[list._id]?.map((task) => (
-                      <TaskCard key={task._id} task={task} listId={list._id} boardId={boardId} />
-                    ))}
-                  </div>
-                </SortableContext>
-
-                <AddTaskButton listId={list._id} boardId={boardId} />
-              </div>
-            ))}
-
+            {/* Add New List Card */}
             {showAddList ? (
-              <div className="flex-shrink-0 w-80 bg-white rounded-lg shadow-md p-3">
-                <form onSubmit={handleAddList}>
-                  <input
-                    type="text"
-                    value={newListTitle}
-                    onChange={(e) => setNewListTitle(e.target.value)}
-                    placeholder="Enter list title..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                    autoFocus
-                  />
-                  <div className="flex items-center space-x-2">
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                    >
-                      Add List
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddList(false);
-                        setNewListTitle('');
-                      }}
-                      className="p-2 hover:bg-gray-100 rounded"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </form>
+              <div className="flex-shrink-0 w-80">
+                <div className="bg-white/60 backdrop-blur-md rounded-3xl shadow-lg border border-white/70 p-4">
+                  <form onSubmit={handleAddList}>
+                    <input
+                      type="text"
+                      value={newListTitle}
+                      onChange={(e) => setNewListTitle(e.target.value)}
+                      placeholder="Enter list title..."
+                      className="w-full px-4 py-3 bg-white/90 backdrop-blur-sm border-2 border-blue-400 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3 font-semibold"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-teal-600 text-white font-semibold rounded-full hover:from-blue-700 hover:to-teal-700 transition-all shadow-md"
+                      >
+                        Add List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddList(false);
+                          setNewListTitle('');
+                        }}
+                        className="px-4 py-2.5 bg-white/80 hover:bg-white text-gray-700 font-semibold rounded-full transition-all"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             ) : (
-              <button
-                onClick={() => setShowAddList(true)}
-                className="flex-shrink-0 w-80 bg-white/60 hover:bg-white/80 backdrop-blur-sm rounded-lg p-4 flex items-center justify-center text-gray-700 hover:text-gray-900 transition-colors"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Add List
-              </button>
+              <div className="flex-shrink-0 w-80">
+                <button
+                  onClick={() => setShowAddList(true)}
+                  className="w-full bg-white/40 backdrop-blur-md hover:bg-white/60 border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-3xl p-4 flex items-center justify-center gap-2 text-blue-700 font-semibold transition-all hover:shadow-lg group"
+                >
+                  <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Add List</span>
+                </button>
+              </div>
             )}
           </div>
 
+          {/* Drag Overlay */}
           <DragOverlay>
             {activeTask ? (
-              <div className="bg-white rounded-lg shadow-lg border-2 border-blue-500 p-3 w-80 opacity-90">
-                <h3 className="text-sm font-medium text-gray-900">{activeTask.title}</h3>
+              <div className="opacity-80">
+                <TaskCard task={activeTask} listId="" boardId={boardId} />
               </div>
             ) : null}
           </DragOverlay>
@@ -339,6 +377,7 @@ const Board = () => {
   );
 };
 
+// Add Task Button Component
 const AddTaskButton = ({ listId, boardId }) => {
   const dispatch = useDispatch();
   const [showForm, setShowForm] = useState(false);
@@ -352,40 +391,39 @@ const AddTaskButton = ({ listId, boardId }) => {
     
     if (!result.error) {
       socketClient.emitTaskCreated(result.payload, boardId);
-      setTaskTitle('');
-      setShowForm(false);
     }
+
+    setTaskTitle('');
+    setShowForm(false);
   };
 
   if (!showForm) {
     return (
-      <div className="p-3">
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full text-left px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-md flex items-center"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </button>
-      </div>
+      <button
+        onClick={() => setShowForm(true)}
+        className="w-full mt-3 p-3 bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-dashed border-gray-300 hover:border-blue-400 rounded-2xl flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-all group"
+      >
+        <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+        <span>Add Task</span>
+      </button>
     );
   }
 
   return (
-    <div className="p-3">
+    <div className="mt-3 bg-white/80 backdrop-blur-sm rounded-2xl p-3 shadow-md">
       <form onSubmit={handleAddTask}>
-        <textarea
+        <input
+          type="text"
           value={taskTitle}
           onChange={(e) => setTaskTitle(e.target.value)}
           placeholder="Enter task title..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-2"
-          rows="2"
+          className="w-full px-3 py-2 bg-white border-2 border-blue-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
           autoFocus
         />
-        <div className="flex items-center space-x-2">
+        <div className="flex gap-2">
           <button
             type="submit"
-            className="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+            className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white font-medium rounded-full hover:from-blue-700 hover:to-teal-700 transition-all text-sm"
           >
             Add
           </button>
@@ -395,9 +433,9 @@ const AddTaskButton = ({ listId, boardId }) => {
               setShowForm(false);
               setTaskTitle('');
             }}
-            className="p-1.5 hover:bg-gray-100 rounded"
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-full transition-all text-sm"
           >
-            <X className="w-4 h-4" />
+            Cancel
           </button>
         </div>
       </form>

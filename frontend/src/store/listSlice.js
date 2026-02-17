@@ -82,9 +82,13 @@ const listSlice = createSlice({
     },
     // Real-time updates
     listCreatedRealtime: (state, action) => {
-      state.lists.push(action.payload);
-      // Sort by position
-      state.lists.sort((a, b) => a.position - b.position);
+      // Check if list already exists to prevent duplicates
+      const exists = state.lists.some((l) => l._id === action.payload._id);
+      if (!exists) {
+        state.lists.push(action.payload);
+        // Sort by position
+        state.lists.sort((a, b) => a.position - b.position);
+      }
     },
     listUpdatedRealtime: (state, action) => {
       const index = state.lists.findIndex((l) => l._id === action.payload._id);
