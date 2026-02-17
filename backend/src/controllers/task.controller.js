@@ -43,7 +43,7 @@ export const getTask = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const updateTask = asyncHandler(async (req, res) => {
-  const { title, description, dueDate, labels, isCompleted } = req.body;
+  const { title, description, dueDate, labels, isCompleted, assignedTo } = req.body;
 
   const task = await taskService.updateTask(req.params.id, req.user._id, {
     title,
@@ -51,6 +51,7 @@ export const updateTask = asyncHandler(async (req, res) => {
     dueDate,
     labels,
     isCompleted,
+    assignedTo,
   });
 
   res.status(HTTP_STATUS.OK).json(

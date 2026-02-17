@@ -302,6 +302,7 @@ const Board = () => {
                     handleUpdateList={handleUpdateList}
                     handleDeleteList={handleDeleteList}
                     boardId={boardId}
+                    boardMembers={currentBoard?.members || []}
                   />
                 );
               })}
@@ -358,7 +359,7 @@ const Board = () => {
           <DragOverlay>
             {activeTask ? (
               <div className="opacity-80">
-                <TaskCard task={activeTask} listId="" boardId={boardId} />
+                <TaskCard task={activeTask} listId="" boardId={boardId} boardMembers={currentBoard?.members || []} />
               </div>
             ) : activeList ? (
               <div className="opacity-80 flex-shrink-0 w-80">
@@ -457,7 +458,8 @@ const SortableList = ({
   setEditListTitle, 
   handleUpdateList, 
   handleDeleteList,
-  boardId 
+  boardId,
+  boardMembers = []
 }) => {
   const {
     attributes,
@@ -550,6 +552,7 @@ const SortableList = ({
                   task={task}
                   listId={list._id}
                   boardId={boardId}
+                  boardMembers={boardMembers}
                 />
               ))}
             </div>

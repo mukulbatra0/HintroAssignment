@@ -88,13 +88,14 @@ class TaskService {
       throw ApiError.forbidden('You do not have access to this board');
     }
 
-    const { title, description, dueDate, labels, isCompleted } = updateData;
+    const { title, description, dueDate, labels, isCompleted, assignedTo } = updateData;
 
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
     if (dueDate !== undefined) task.dueDate = dueDate;
     if (labels !== undefined) task.labels = labels;
     if (isCompleted !== undefined) task.isCompleted = isCompleted;
+    if (assignedTo !== undefined) task.assignedTo = assignedTo;
 
     await task.save();
     await task.populate('assignedTo', 'name email avatar');

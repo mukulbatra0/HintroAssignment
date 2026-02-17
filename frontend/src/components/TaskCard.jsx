@@ -6,8 +6,9 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, User, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
+import UserAssignmentDropdown from './UserAssignmentDropdown';
 
-const TaskCard = ({ task, listId, boardId }) => {
+const TaskCard = ({ task, listId, boardId, boardMembers = [] }) => {
   const dispatch = useDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
@@ -64,6 +65,54 @@ const TaskCard = ({ task, listId, boardId }) => {
       data: { isCompleted: !task.isCompleted } 
     }));
     console.log('Toggle result:', result);
+    if (!result.error && boardId) {
+      socketClient.emitTaskUpdated(result.payload, boardId);
+    }
+  };
+
+  const handleAssignUser = async (userId) => {
+    console.log('📌 TaskCard handleAssignUser called');
+    console.log('Task ID:', task._id);
+    console.log('User ID to assign:', userId);
+    console.log('Current assignedTo:', task.assignedTo);
+    
+    const currentAssignedTo = task.assignedTo || [];
+    const newAssignedTo = [...currentAssignedTo, userId];
+    
+    console.log('New assignedTo array:', newAssignedTo);
+    
+    const result = await dispatch(updateTask({
+      taskId: task._id,
+      data: { assignedTo: newAssignedTo }
+    }));
+    
+    console.log('Assign result:', result);
+    
+    if (!result.error && boardId) {
+      socketClient.emitTaskUpdated(result.payload, boardId);
+    }
+  };
+
+  const handleUnassignUser = async (userId) => {
+    console.log('📌 TaskCard handleUnassignUser called');
+    console.log('Task ID:', task._id);
+    console.log('User ID to unassign:', userId);
+    
+    const currentAssignedTo = task.assignedTo || [];
+    const newAssignedTo = currentAssignedTo.filter(id => {
+      const assigneeId = typeof id === 'object' ? id._id : id;
+      return assigneeId !== userId;
+    });
+    
+    console.log('New assignedTo array:', newAssignedTo);
+    
+    const result = await dispatch(updateTask({
+      taskId: task._id,
+      data: { assignedTo: newAssignedTo }
+    }));
+    
+    console.log('Unassign result:', result);
+    
     if (!result.error && boardId) {
       socketClient.emitTaskUpdated(result.payload, boardId);
     }
@@ -213,11 +262,21 @@ const TaskCard = ({ task, listId, boardId }) => {
                 )}
               </div>
 
-              {task.isCompleted && (
+              <div className="flex items-center gap-2">
+                {/* User Assignment Dropdown */}
+                <UserAssignmentDropdown
+                  task={task}
+                  boardMembers={boardMembers}
+                  onAssign={handleAssignUser}
+                  onUnassign={handleUnassignUser}
+                />
+
+                {task.isCompleted && (
                 <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
                   Completed
                 </span>
               )}
+              </div>
             </div>
           </>
         )}
