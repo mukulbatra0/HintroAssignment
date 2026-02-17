@@ -223,15 +223,10 @@ const taskSlice = createSlice({
         state.error = null;
       })
       .addCase(updateTask.fulfilled, (state, action) => {
-        console.log('===== updateTask.fulfilled =====');
-        console.log('Payload:', action.payload);
         state.loading = false;
         const task = action.payload;
         // Handle both cases: task.list as object or as string ID
         const listId = typeof task.list === 'object' ? task.list._id : task.list;
-        
-        console.log('List ID:', listId);
-        console.log('Tasks before update:', JSON.stringify(state.tasks[listId]));
         
         if (state.tasks[listId]) {
           // Create a new tasks object and new array to ensure React detects the change
@@ -241,15 +236,11 @@ const taskSlice = createSlice({
               t._id === task._id ? task : t
             )
           };
-          console.log('Tasks after update:', JSON.stringify(state.tasks[listId]));
-        } else {
-          console.log('WARNING: List not found in state.tasks');
         }
         
         if (state.currentTask?._id === task._id) {
           state.currentTask = task;
         }
-        console.log('===== END updateTask.fulfilled =====');
       })
       .addCase(updateTask.rejected, (state, action) => {
         state.loading = false;

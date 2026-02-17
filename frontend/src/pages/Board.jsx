@@ -289,8 +289,6 @@ const Board = () => {
               {lists.map((list) => {
                 // Get tasks for this list - use tasks from Redux state
                 const listTasks = tasks[list._id] || [];
-                console.log(`Rendering list ${list.title} (${list._id}) with ${listTasks.length} tasks:`, 
-                  listTasks.map(t => ({ id: t._id, title: t.title, completed: t.isCompleted })));
                 
                 return (
                   <SortableList

@@ -55,7 +55,6 @@ export const useSocketListeners = (boardId) => {
     });
 
     socketClient.on('list:reordered', ({ listId, newPosition }) => {
-      console.log('🔔 Received list:reordered event:', { listId, newPosition });
       dispatch(listReorderedRealtime({ listId, newPosition }));
     });
 

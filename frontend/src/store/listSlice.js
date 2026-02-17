@@ -100,16 +100,13 @@ const listSlice = createSlice({
       state.lists = state.lists.filter((l) => l._id !== action.payload);
     },
     listReorderedRealtime: (state, action) => {
-      console.log('📋 listReorderedRealtime called:', action.payload);
       const { listId, newPosition } = action.payload;
       const index = state.lists.findIndex((l) => l._id === listId);
-      console.log('Found list at index:', index, 'Current lists:', state.lists.map(l => ({ id: l._id, title: l.title, position: l.position })));
       if (index !== -1) {
         // Create a new array to ensure React detects the change
         state.lists = state.lists.map((list) =>
           list._id === listId ? { ...list, position: newPosition } : list
         ).sort((a, b) => a.position - b.position);
-        console.log('After reorder:', state.lists.map(l => ({ id: l._id, title: l.title, position: l.position })));
       }
     },
     // Optimistic list reorder - immediately update UI
